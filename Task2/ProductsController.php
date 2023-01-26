@@ -3,11 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\Color;
 use App\Models\Product;
-use App\Models\Size;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class ProductsController extends Controller
 {
@@ -16,14 +13,9 @@ class ProductsController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-
-    public function __construct()
-    {
-
-    }
-
     public function index()
     {
+        //
         return view('admin.products.index')->with('products', Product::paginate(10));
     }
 
@@ -36,13 +28,7 @@ class ProductsController extends Controller
     {
         //
         $categories = Category::all();
-        $colors = Color::all();
-        $sizes = Size::all();
-        return view('admin.products.create')->with([
-            'categories' => $categories,
-            'sizes' => $sizes,
-            'colors' => $colors
-        ]);
+        return view('admin.products.create',compact('categories'));
     }
 
     /**
@@ -53,21 +39,16 @@ class ProductsController extends Controller
      */
     public function store(Request $request)
     {
-        //
         $request->validate(Product::$rules);
-
+        //dd($request->post());
         $imageUrl = $request->file('image')->store('products', ['disk' => 'public']);
         $product = new Product;
-
         $product->fill($request->post());
         $product['image'] = $imageUrl;
         $product['rating'] = 0;
         $product['rating_count'] = 0;
-        $product['is_recent'] = $request['is_recent'] ? 1 : 0;
-        $product['is_featured'] = $request['is_featured'] ? 1 : 0;
-
-        $product->save();
-        return redirect()->route('products.index');
+        $product -> save();
+        return redirect()->route('admin.products');
     }
 
     /**
@@ -78,10 +59,8 @@ class ProductsController extends Controller
      */
     public function show($id)
     {
-        //
-        $category = Category::findOrFail($id);
-        return view('admin.categories.show', compact('category'));
-
+        $product = Product::findOrFail($id);
+        return view('admin.products.show', compact('product'));
     }
 
     /**
@@ -92,11 +71,9 @@ class ProductsController extends Controller
      */
     public function edit($id)
     {
-        //
-        $product = Product::findOrFail(['id' => $id]);
         $categories = Category::all();
-        return response()->view('products.edit', ['product' => $product, 'categories' => $categories]);
-
+        $product = Product::findOrFail($id);
+        return view('admin.products.edit', compact('product','categories'));
     }
 
     /**
@@ -108,18 +85,18 @@ class ProductsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
         $product = Product::findOrFail($id);
+
         $request->validate(Product::$rules);
-        
+
         $product->fill($request->post());
-        if ($request->file('image')) {
-            $imageUrl = $request->file('image')->store('products', ['disk' => 'public']);
-            $product['image'] = $imageUrl;
-        }
+
+        $imageUrl = $request->file('image')->store('products', ['disk' => 'public']);
+
+        $product['image'] = $imageUrl;
 
         $product->save();
-        return redirect()->route('products.index');
+        return redirect()->route('admin.products');
     }
 
     /**
@@ -130,9 +107,9 @@ class ProductsController extends Controller
      */
     public function destroy($id)
     {
-        //
-        Product::destroy(['id' => $id]);
-        return redirect()->route('products.index');
-
+        $product = Product::findOrFail($id);
+        Product::destroy($id);
+        return redirect()->route('admin.products')->with('success', 'Record has been deleted successfully!');
+        
     }
 }
